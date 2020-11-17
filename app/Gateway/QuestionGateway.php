@@ -1,10 +1,8 @@
 <?php
 
-
 namespace App\Gateway;
 
 use Illuminate\Database\ConnectionInterface;
-
 
 class QuestionGateway
 {

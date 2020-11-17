@@ -2,6 +2,7 @@
 
 
 namespace App\Gateway;
+
 use Illuminate\Database\ConnectionInterface;
 
 class EventLogGateway

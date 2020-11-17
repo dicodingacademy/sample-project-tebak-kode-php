@@ -1,10 +1,8 @@
 <?php
 
-
 namespace App\Gateway;
 
 use Illuminate\Database\ConnectionInterface;
-
 
 class UserGateway
 {
@@ -27,7 +25,7 @@ class UserGateway
             ->first();
 
         if ($user) {
-            return (array) $user;
+            return (array)$user;
         }
 
         return null;

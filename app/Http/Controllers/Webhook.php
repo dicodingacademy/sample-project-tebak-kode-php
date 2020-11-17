@@ -18,7 +18,6 @@ use LINE\LINEBot\MessageBuilder\TemplateMessageBuilder;
 use LINE\LINEBot\MessageBuilder\TextMessageBuilder;
 use LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder;
 
-
 class Webhook extends Controller
 {
     /**
@@ -75,6 +74,7 @@ class Webhook extends Controller
         $httpClient = new CurlHTTPClient(getenv('CHANNEL_ACCESS_TOKEN'));
         $this->bot = new LINEBot($httpClient, ['channelSecret' => getenv('CHANNEL_SECRET')]);
     }
+
     public function __invoke()
     {
         // get request
@@ -265,4 +265,3 @@ class Webhook extends Controller
         }
     }
 }
-
