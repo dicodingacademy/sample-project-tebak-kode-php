@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers;
 
 use App\Gateway\EventLogGateway;
@@ -18,7 +17,7 @@ use LINE\LINEBot\MessageBuilder\TemplateMessageBuilder;
 use LINE\LINEBot\MessageBuilder\TextMessageBuilder;
 use LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder;
 
-class Webhook extends Controller
+class WebhookController extends Controller
 {
     /**
      * @var LINEBot
@@ -53,7 +52,6 @@ class Webhook extends Controller
      */
     private $user;
 
-
     public function __construct(
         Request $request,
         Response $response,
@@ -61,8 +59,7 @@ class Webhook extends Controller
         EventLogGateway $logGateway,
         UserGateway $userGateway,
         QuestionGateway $questionGateway
-    )
-    {
+    ) {
         $this->request = $request;
         $this->response = $response;
         $this->logger = $logger;
@@ -72,7 +69,7 @@ class Webhook extends Controller
 
         // create bot object
         $httpClient = new CurlHTTPClient(getenv('CHANNEL_ACCESS_TOKEN'));
-        $this->bot = new LINEBot($httpClient, ['channelSecret' => getenv('CHANNEL_SECRET')]);
+        $this->bot  = new LINEBot($httpClient, ['channelSecret' => getenv('CHANNEL_SECRET')]);
     }
 
     public function __invoke()
@@ -93,33 +90,32 @@ class Webhook extends Controller
     private function handleEvents()
     {
         $data = $this->request->all();
+        print_r($data);
 
-        if(is_array($data['events'])){
-            foreach ($data['events'] as $event)
-            {
+        if (is_array($data['events'])) {
+            foreach ($data['events'] as $event) {
                 // skip group and room event
-                if(! isset($event['source']['userId'])) continue;
+                if (!isset($event['source']['userId'])) continue;
 
                 // get user data from database
                 $this->user = $this->userGateway->getUser($event['source']['userId']);
 
                 // if user not registered
-                if(!$this->user) $this->followCallback($event);
+                if (!$this->user) $this->followCallback($event);
                 else {
                     // respond event
-                    if($event['type'] == 'message'){
-                        if(method_exists($this, $event['message']['type'].'Message')){
-                            $this->{$event['message']['type'].'Message'}($event);
+                    if ($event['type'] == 'message') {
+                        if (method_exists($this, $event['message']['type'] . 'Message')) {
+                            $this->{$event['message']['type'] . 'Message'}($event);
                         }
                     } else {
-                        if(method_exists($this, $event['type'].'Callback')){
-                            $this->{$event['type'].'Callback'}($event);
+                        if (method_exists($this, $event['type'] . 'Callback')) {
+                            $this->{$event['type'] . 'Callback'}($event);
                         }
                     }
                 }
             }
         }
-
 
         $this->response->setContent("No events found!");
         $this->response->setStatusCode(200);
@@ -129,8 +125,7 @@ class Webhook extends Controller
     private function followCallback($event)
     {
         $res = $this->bot->getProfile($event['source']['userId']);
-        if ($res->isSucceeded())
-        {
+        if ($res->isSucceeded()) {
             $profile = $res->getJSONDecodedBody();
 
             // create welcome message
@@ -154,17 +149,14 @@ class Webhook extends Controller
                 $profile['userId'],
                 $profile['displayName']
             );
-
         }
     }
 
     private function textMessage($event)
     {
         $userMessage = $event['message']['text'];
-        if($this->user['number'] == 0)
-        {
-            if(strtolower($userMessage) == 'mulai')
-            {
+        if ($this->user['number'] == 0) {
+            if (strtolower($userMessage) == 'mulai') {
                 // reset score
                 $this->userGateway->setScore($this->user['user_id'], 0);
                 // update number progress
@@ -201,19 +193,19 @@ class Webhook extends Controller
         $this->bot->replyMessage($event['replyToken'], $multiMessageBuilder);
     }
 
-    private function sendQuestion($replyToken, $questionNum=1)
+    private function sendQuestion($replyToken, $questionNum = 1)
     {
         // get question from database
         $question = $this->questionGateway->getQuestion($questionNum);
 
         // prepare answer options
-        for($opsi = "a"; $opsi <= "d"; $opsi++) {
-            if(!empty($question['option_'.$opsi]))
-                $options[] = new MessageTemplateActionBuilder($question['option_'.$opsi], $question['option_'.$opsi]);
+        for ($opsi = "a"; $opsi <= "d"; $opsi++) {
+            if (!empty($question['option_' . $opsi]))
+                $options[] = new MessageTemplateActionBuilder($question['option_' . $opsi], $question['option_' . $opsi]);
         }
 
         // prepare button template
-        $buttonTemplate = new ButtonTemplateBuilder($question['number']."/10", $question['text'], $question['image'], $options);
+        $buttonTemplate = new ButtonTemplateBuilder($question['number'] . "/10", $question['text'], $question['image'], $options);
 
         // build message
         $messageBuilder = new TemplateMessageBuilder("Gunakan mobile app untuk melihat soal", $buttonTemplate);
@@ -225,22 +217,20 @@ class Webhook extends Controller
     private function checkAnswer($message, $replyToken)
     {
         // if answer is true, increment score
-        if($this->questionGateway->isAnswerEqual($this->user['number'], $message)){
+        if ($this->questionGateway->isAnswerEqual($this->user['number'], $message)) {
             $this->user['score']++;
             $this->userGateway->setScore($this->user['user_id'], $this->user['score']);
         }
 
-        if($this->user['number'] < 10)
-        {
+        if ($this->user['number'] < 10) {
             // update number progress
             $this->userGateway->setUserProgress($this->user['user_id'], $this->user['number'] + 1);
 
             // send next question
             $this->sendQuestion($replyToken, $this->user['number'] + 1);
-        }
-        else {
+        } else {
             // create user score message
-            $message = 'Skormu '. $this->user['score'];
+            $message = 'Skormu ' . $this->user['score'];
             $textMessageBuilder1 = new TextMessageBuilder($message);
 
             // create sticker message
@@ -249,7 +239,7 @@ class Webhook extends Controller
 
             // create play again message
             $message = ($this->user['score'] < 8) ?
-                'Wkwkwk! Nyerah? Ketik "MULAI" untuk bermain lagi!':
+                'Wkwkwk! Nyerah? Ketik "MULAI" untuk bermain lagi!' :
                 'Great! Mantap bro! Ketik "MULAI" untuk bermain lagi!';
             $textMessageBuilder2 = new TextMessageBuilder($message);
 
